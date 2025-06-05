@@ -1,10 +1,12 @@
 # Work_pipeline
 Genomic_analysis_machine_learning
 
-This repository contains R, Bash, and Python scripts for genome analysis:  including genome assembly, variants analysis, genome annotation, RNA-seq, statistical analysis, exploratory data analysis, and machine learning.
+This repository contains R and Bash scripts for genome analysis:  including genome assembly, variants analysis, genome annotation, 16S-metatranscriptomics, RNA-seq and genome screening for pathogenicity and virulence factors.
 
-Molecular and structural modeling, docking and electrostatic potential maps tutorials are also included here.
+Python scripts on statistical analysis, exploratory data analysis, and machine learning.
 
-Scripts on deep learning and molecular dynamics simulation on protein and ligand with analysis will be available soon.....
+Molecular-structural modeling, docking, DFT and electrostatic potential maps tutorials are also included here.
+
+Scripts on deep learning and on molecular dynamics simulation on protein and ligand with analysis will be available soon.....
 
 
