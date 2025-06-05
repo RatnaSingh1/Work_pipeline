@@ -5,6 +5,6 @@ This repository contains R, Bash, and Python scripts for genome analysis:  inclu
 
 Molecular and structural modeling, docking and electrostatic potential maps tutorials are also included here.
 
-Scripts on deep learning and molecular dynamic simulation will be available soon.....
+Scripts on deep learning and molecular dynamics simulation on protein and ligand with analysis will be available soon.....
 
 
