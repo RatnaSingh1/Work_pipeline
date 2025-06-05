@@ -5,4 +5,6 @@ This repository contains R, Bash, and Python scripts for genome analysis:  inclu
 
 Molecular and structural modeling tutorials are included
 
+Scripts on deep learning will be available soon
+
 
