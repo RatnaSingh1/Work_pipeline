@@ -1,0 +1,15 @@
+receptor = *.pdbqt
+center_x = 16.721 
+center_y = 39.281 
+center_z = -18.482
+
+size_x = 58
+size_y = 42
+size_z = 80
+
+num_modes = 20
+
+exhaustiveness = 50
+
+
+
