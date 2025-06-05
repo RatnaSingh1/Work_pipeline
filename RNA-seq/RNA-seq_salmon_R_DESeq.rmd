@@ -1,0 +1,97 @@
+# Load required libraries
+lapply_vector <- c("DESeq2", "IHW", "tidyverse", "pheatmap", "RColorBrewer", "DOSE", "scales", "ggrepel", 
+                   "cowplot", "openxlsx", "dplyr", "ashr", "factoextra", "cluster", "GenomicTools.fileHandler", 
+                   "vsn", "ggvenn", "clusterProfiler", "org.At.tair.db", "xlsx")
+lapply(lapply_vector, library, character.only = TRUE)  
+
+library(tximport)
+library(tximportData)
+
+# Define directory path and list files
+dir <- "final"
+list.files(dir)
+list.files(file.path(dir, "quants"))
+
+# Import sample metadata
+samples <- read.table(file.path(dir, "samples.txt"), header = TRUE)
+print(samples)
+
+# Create file paths for quantification data
+files <- file.path(dir, "quants", samples$run, "quant.sf")
+names(files) <- paste0("sample", 1:18)
+print(names(files))
+
+# Check if all files exist
+stopifnot(all(file.exists(files)))  
+
+# Import gene mapping file
+tx2gene <- read.table("genes2.txt", header = TRUE)
+txi <- tximport(files, type = "salmon", tx2gene = tx2gene[, c("Name", "gene")], countsFromAbundance = "lengthScaledTPM")
+print(attributes(txi))
+
+# View count matrix
+txi$counts %>% print()
+
+# Create sample metadata
+sampletype <- data.frame(time = rep(c("2h", "2h", "7d", "7d", "7d", "7d"), each = 3), 
+                         condition = rep(c("H2O", "CS", "Mock", "CS", "H2O_TMV", "CS_TMV"), each = 3),
+                         protocol = rep(c("H2O_2h", "CS_2h", "Mock_7d", "CS_7d", "H2O_TMV_7d", "CS_TMV_7d"), each = 3))
+meta <- data.frame(sampletype, row.names = colnames(txi$counts))
+
+# Create DESeqDataSet
+ddsTx <- DESeqDataSetFromTximport(txi, colData = samples, design = ~ protocol)
+
+# Filter out low-expression genes
+keep <- rowSums(counts(ddsTx)) >= 10
+dds <- ddsTx[keep, ]
+
+# Differential expression analysis
+dds <- DESeq(dds)
+
+# Variance stabilizing transformation
+vsd <- vst(dds)
+meanSdPlot(assay(vsd))
+
+# Principal Component Analysis (PCA)
+plot <- plotPCA(vsd, intgroup = "protocol")
+ggsave(filename = "PCA_nic.jpg", plot = plot, device = "jpg", path = "figures", width = 7, height = 6)
+
+# Compute Euclidean distance for clustering
+dist_vsd <- dist(t(assay(vsd)), method = "euclidean")
+hmCol <- colorRampPalette(brewer.pal(9, "Greens"))(100)
+
+# Ensure labels are correctly defined
+labels <- colnames(vsd)  # Fix potential missing `labels`
+
+plot <- pheatmap(as.matrix(dist_vsd), cellwidth = 15, cellheight = 15, color = rev(hmCol), labels_col = labels, labels_row = labels, treeheight_col = 15, treeheight_row = 15)
+ggsave(filename = "EuclideanDist_nic.jpg", plot = plot, device = "jpg", path = "figures", width = 7, height = 6)
+
+# Define contrast for differential expression analysis
+Contrast <- c("protocol", "CS_2h", "H2O_2h")
+comparison <- "CS_H2O_2h"
+comparison_title <- "CS vs H2O after 2h"
+
+res <- results(dds, contrast = Contrast)
+
+# Log fold change shrinkage
+resLfc <- lfcShrink(dds = dds, contrast = Contrast, type = "ashr", res = res)
+resLfc_df <- data.frame(resLfc)
+
+# Check column names
+print(colnames(resLfc_df))
+
+# MA Plot visualization
+plot <- ggplot(resLfc_df, aes(x = baseMean, y = log2FoldChange, colour = padj <= 0.05 & !is.na(padj))) +    
+  geom_point(size = 0.5) +    
+  scale_x_continuous(trans = "log1p", breaks = c(1e-1, 1e3, 1e5)) +
+  scale_colour_manual(values = c("FALSE" = "cornflowerblue", "TRUE" = "coral1"), labels = c("P > 0.05", "P <= 0.05"), name = "Significance") +   
+  guides(color = guide_legend(override.aes = list(size = 2))) +  
+  coord_cartesian(ylim = c(-0.8, 0.8)) +  
+  ggtitle(comparison_title)
+print(plot)
+
+ggsave(filename = paste("MA_", comparison, ".jpg", sep = ""), plot = plot, device = "jpg", path = "figures")
+
+# Filter significant differentially expressed genes
+resLfc_df_sig <- resLfc_df %>% filter(padj <= 0.05)
+write.xlsx(resLfc_df_sig, file = paste0("significant_", comparison, ".xlsx"), col.names = TRUE, row.names = TRUE)
